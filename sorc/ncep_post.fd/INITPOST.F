@@ -256,7 +256,13 @@
       do l = 1, lm
        do j = jsta_2l, jend_2u
         do i = 1, im
-            t ( i, j, l ) = dum3d ( i, j, l ) + 300.
+! jdong why add 300?
+              t ( i, j, l ) = dum3d ( i, j, l )
+!            if (dum3d ( i, j, l ) < spval) then
+!              t ( i, j, l ) = dum3d ( i, j, l ) + 300.
+!            else 
+!              t ( i, j, l ) = spval
+!            end if
 !MEB  this is theta the 300 is my guess at what T0 is 
         end do
        end do
@@ -266,36 +272,42 @@
       end do
       VarName='U'
       call getVariable(fileName,DateStr,DataHandle,VarName,DUM3D,         &
-        IM+1,1,JM+1,LM+1,IM+1,JS,JE,LM)
+!        IM+1,1,JM+1,LM+1,IM+1,JS,JE,LM)
+        IM+1,1,JM+1,LM+1,IM,JS,JE,LM)
       do l = 1, lm
        do j = jsta_2l, jend_2u
-        do i = 1, im+1
-            u ( i, j, l ) = dum3d ( i, j, l )
+!        do i = 1, im+1
+        do i = 1, im
+!            u ( i, j, l ) = dum3d ( i, j, l )
+            uh ( i, j, l ) = dum3d ( i, j, l )
         end do
        end do
 !  fill up UH which is U at P-points including 2 row halo
-       do j = jsta_2l, jend_2u
-        do i = 1, im
-            UH (I,J,L) = (dum3d(I,J,L)+dum3d(I+1,J,L))*0.5
-        end do
-       end do
+!       do j = jsta_2l, jend_2u
+!        do i = 1, im
+!            UH (I,J,L) = (dum3d(I,J,L)+dum3d(I+1,J,L))*0.5
+!        end do
+!       end do
       end do
 !      if(jj>= jsta .and. jj<=jend)print*,'sample U= ',U(ii,jj,ll)
       VarName='V'
       call getVariable(fileName,DateStr,DataHandle,VarName,DUM3D,         &
-        IM+1,1,JM+1,LM+1,IM, JS,JEV,LM)
+!        IM+1,1,JM+1,LM+1,IM, JS,JEV,LM)
+        IM+1,1,JM+1,LM+1,IM, JS,JE,LM)
       do l = 1, lm
-       do j = jsta_2l, jev
+!       do j = jsta_2l, jev
+       do j = jsta_2l, jend_2u 
         do i = 1, im
-            v ( i, j, l ) = dum3d ( i, j, l )
+!            v ( i, j, l ) = dum3d ( i, j, l )
+            vh ( i, j, l ) = dum3d ( i, j, l )
         end do
        end do
 !  fill up VH which is V at P-points including 2 row halo
-       do j = jsta_2l, jend_2u
-        do i = 1, im
-          VH(I,J,L) = (dum3d(I,J,L)+dum3d(I,J+1,L))*0.5
-        end do
-       end do
+!       do j = jsta_2l, jend_2u
+!        do i = 1, im
+!          VH(I,J,L) = (dum3d(I,J,L)+dum3d(I,J+1,L))*0.5
+!        end do
+!       end do
       end do
 !      if(jj>= jsta .and. jj<=jend)print*,'sample V= ',V(ii,jj,ll)
 
@@ -313,7 +325,12 @@
       DO L=1,LM
         DO I=1,IM
          DO J=JSTA_2L,JEND_2U 
-          WH(I,J,L) = (DUM3D(I,J,L)+DUM3D(I,J,L+1))*0.5
+! jdong
+          if (DUM3D(I,J,L) < spval .and. DUM3D(I,J,L+1) < spval) then  
+            WH(I,J,L) = (DUM3D(I,J,L)+DUM3D(I,J,L+1))*0.5
+          else 
+            WH(I,J,L) = spval
+          end if
          ENDDO
         ENDDO
       ENDDO
@@ -328,7 +345,12 @@
 !HC            q ( i, j, l ) = dum3d ( i, j, l )
 !HC CONVERT MIXING RATIO TO SPECIFIC HUMIDITY
 !mhu check !!!!            if (dum3d(i,j,l) < 10E-12) dum3d(i,j,l) = 10E-12
+! jdong
+          if (dum3d ( i, j, l ) < spval) then
             q ( i, j, l ) = dum3d ( i, j, l )/(1.0+dum3d ( i, j, l ))
+          else
+            q ( i, j, l ) = spval
+          end if
         end do
        end do
       end do
@@ -351,6 +373,8 @@
         do i = 1, im
 !            PMID(I,J,L)=DUM3D(I,J,L)+DUM3D2(I,J,L)
             PMID(I,J,L)=DUM3D(I,J,L)
+! jdong
+          if (pmid(i,j,l) < spval) then
             thv ( i, j, l ) = T(I,J,L)*(Q(I,J,L)*0.608+1.)
 ! now that I have P, convert theta to t
             t ( i, j, l ) = T(I,J,L)*(PMID(I,J,L)*1.E-5)**CAPA
@@ -365,6 +389,11 @@
 !	       qqi(i,j,l)=qqw(i,j,l)
 !	      end if 
 !	     end if 	                      
+         else
+           thv( i, j, l )=spval
+           t( i, j, l )=spval
+           omga( i, j, l )=spval
+         end if ! pmid(i,j,l) < spval
         end do
        end do
       end do
@@ -373,7 +402,8 @@
         ll=lm-l+1
         do j = jsta_2l, jend_2u
           do i = 1, im
-            if((PMID(I,J,ll-1) - PMID(I,J,ll))>=0.) then
+! jdong
+            if((PMID(I,J,ll-1) - PMID(I,J,ll))>=0. .and. PMID(I,J,ll-1) .lt. spval) then                        
 !               write(*,*) 'non-monotonic PMID, i,j,ll ', i,j,ll
 !               write(*,*) 'PMID: ll-1,ll,ll+1', PMID(I,J,LL-1) &
 !                     ,PMID(I,J,LL), PMID(I,J,LL+1)
@@ -400,7 +430,8 @@
       ll=lm
       do j = jsta_2l, jend_2u
         do i = 1, im
-          if((PMID(I,J,ll-1) - PMID(I,J,ll))>=0.) then
+! jdong
+          if((PMID(I,J,ll-1) - PMID(I,J,ll))>=0. .and. PMID(I,J,ll-1) .lt. spval) then                     
             ! write(*,*) 'non-monotonic PMID, i,j,ll ', i,j,ll
             ! write(*,*) 'PMID: ll-2,ll-1,ll', PMID(I,J,LL-2) &
             !       ,PMID(I,J,LL-1), PMID(I,J,LL)
@@ -420,8 +451,14 @@
       DO L=2,LM
          DO I=1,IM
             DO J=JSTA_2L,JEND_2U
+! jdong
+             if (PMID(I,J,L-1) .lt. spval .and. PMID(I,J,L) .lt. spval) then
               PINT(I,J,L)=(PMID(I,J,L-1)+PMID(I,J,L))*0.5 
               ALPINT(I,J,L)=ALOG(PINT(I,J,L))
+             else
+              PINT(I,J,L)=spval
+              ALPINT(I,J,L)=spval
+             end if
             ENDDO
          ENDDO
       ENDDO
@@ -810,7 +847,12 @@
         IM,1,JM,1,IM,JS,JE,1)
        do j = jsta_2l, jend_2u
         do i = 1, im
+! jdong
+          if (dummy ( i, j ) .lt. spval) then
             FIS ( i, j ) = dummy ( i, j ) * G
+          else
+            fis(i,j) = spval
+          end if
         end do
        end do
 !
@@ -833,7 +875,13 @@
       DO L=1,LM+1
         DO I=1,IM
          DO J=JS,JE
-          ZINT(I,J,L)=(ZINT(I,J,L)+DUM3D(I,J,L))/G
+! jdong no PH for MPAS
+!          ZINT(I,J,L)=(ZINT(I,J,L)+DUM3D(I,J,L))/G
+          if (ZINT(I,J,L) .lt. spval) then
+            ZINT(I,J,L)=ZINT(I,J,L)/G
+          else
+            ZINT(I,J,L)=spval
+          end if
          ENDDO
         ENDDO
       ENDDO
@@ -846,7 +894,8 @@
 
       DO J=Jsta,jend
       DO I=1,IM
-        if((PINT(I,J,lm) - DUMMY(I,J))>=0.) then 
+! jdong
+        if((PINT(I,J,lm) - DUMMY(I,J))>=0. .and. PINT(I,J,lm) .lt. spval) then 
            ! write(*,*) 'non-monotonic PINT, i,j,lm ', i,j,lm
            ! write(*,*)  'PINT: lm,lm+1, PMID: lm', PINT(I,J,LM),DUMMY(I,J), PMID(I,J,LM)
            DUMMY(I,J)=PMID(I,J,LM)*1.001
@@ -960,20 +1009,29 @@
       ENDIF  !  IF(MODELNAME == 'RAPR')THEN
 
 !!!!!!!!!!!!!
-      IF(MODELNAME == 'RAPR')THEN
+! jdong skip this block and use original zint
+      IF(MODELNAME == 'RAPR' .and. 2==1 )THEN
 !integrate heights hydrostatically
        do j = js, je
         do i = 1, im
+! jdong
+          if (FIS(I,J) .lt. spval) then
             ZINT(I,J,LM+1)=FIS(I,J)/G
             DUMMY(I,J)=FIS(I,J)
          if(i==im/2.and.j==(jsta+jend)/2)                           &
-        print*,'i,j,L,ZINT from unipost= ',i,j,LM+1,ZINT(I,J,LM+1)      &
-              , ALPINT(I,J,LM+1),ALPINT(I,J,LM)  
+        print*,'i,j,L,ZINT from unipost= ',i,j,LM+1,ZINT(I,J,LM+1)  &
+              , ALPINT(I,J,LM+1),ALPINT(I,J,LM)
+          else
+            ZINT(I,J,LM+1)=spval
+            DUMMY(I,J)=spval
+          end if
         end do
        end do
       DO L=LM,1,-1
        do j = js, je
         do i = 1, im
+! jdong
+         if (DUMMY(I,J) .lt. spval) then
          DUMMY2(I,J)=HTM(I,J,L)*T(I,J,L)*(Q(I,J,L)*D608+1.0)*RD*          &
                    (ALPINT(I,J,L+1)-ALPINT(I,J,L))+DUMMY(I,J)
 ! compute difference between model and unipost heights:
@@ -983,16 +1041,22 @@
          if(i==im/2.and.j==(jsta+jend)/2)       &
         print*,'i,j,L,ZINT from unipost= ',i,j,l,ZINT(I,J,L)
          DUMMY(I,J)=DUMMY2(I,J)
+        else
+         ZINT(I,J,L)=spval
+        end if
         ENDDO
        ENDDO
       END DO
       DO L=LM,1,-1
        do j = js, je
         do i = 1, im
+! jdong
+         if (DUMMY(I,J) .lt. spval) then
          if(i==im/2.and.j==(jsta+jend)/2) then
         print*,'DIFF heights model-unipost= ',         &
          i,j,l,DUM3D(I,J,L)
          endif
+         end if
         ENDDO
        ENDDO
       END DO
@@ -1007,6 +1071,8 @@
        DO L=1,LM-1
         DO I=1,IM
          DO J=JS,JE
+! jdong
+          if (PMID(I,J,L) .lt. spval) then
           FACT=(ALOG(PMID(I,J,L))-ALPINT(I,J,L))/                   & 
                max(1.e-6,(ALPINT(I,J,L+1)-ALPINT(I,J,L)))  
           ZMID(I,J,L)=ZINT(I,J,L)+(ZINT(I,J,L+1)-ZINT(I,J,L))*FACT
@@ -1015,22 +1081,32 @@
                  'P(K+1) and P(K) are too close, i,j,L,',             &
                  'ALPINT(I,J,L+1),ALPINT(I,J,L),ZMID = ',             &
                   i,j,l,ALPINT(I,J,L+1),ALPINT(I,J,L),ZMID(I,J,L)
+         else
+          ZMID(I,J,L)=spval
+         end if
          ENDDO
         ENDDO
-       print*,'max/min ZMID= ',l,maxval(dummy),minval(dummy)
+!       print*,'max/min ZMID= ',l,maxval(dummy),minval(dummy)
        ENDDO
 
         DO I=1,IM
          DO J=JS,JE
           DO L=1,LM
-           ZINT(I,J,L+1) =AMIN1(ZINT(I,J,L)-2.,ZINT(I,J,L+1))
+! jdong
+           if (ZINT(I,J,L) .lt. spval .and. ZINT(I,J,L+1) .lt. spval) then                            
+         !  ZINT(I,J,L+1) =AMIN1(ZINT(I,J,L)-2.,ZINT(I,J,L+1))
            ZMID(I,J,L)=(ZINT(I,J,L+1)+ZINT(I,J,L))*0.5  ! ave of z
+           else
+           ZINT(I,J,L+1)=spval
+           ZMID(I,J,L)=spval
+           end if
           ENDDO
-          dummy(i,j)=ZMID(I,J,LM)
+! jdong comment out
+!          dummy(i,j)=ZMID(I,J,LM)
          ENDDO
         ENDDO
-       print*,'max/min ZMID= ',lm,maxval(ZMID(1:im,js:je,lm)),       &
-                                  minval(ZMID(1:im,js:je,lm))
+!       print*,'max/min ZMID= ',lm,maxval(ZMID(1:im,js:je,lm)),       &
+!                                  minval(ZMID(1:im,js:je,lm))
      ELSE
 
        DO L=1,LM
@@ -1044,6 +1120,15 @@
         ENDDO
        ENDDO
       ENDIF  ! IF(MODELNAME == 'RAPR')THEN
+
+        DO I=1,IM
+         DO J=JS,JE
+         if(i==297.and.j==273) then                           
+            print*,'jdong ', ZMID(I,J,:)            
+            print*,'jdong 2', zint(i,j,:)
+         end if
+         ENDDO
+        ENDDO
 
 !
 ! E. James - 8 Dec 2017: this is for HRRR-smoke; it needs to be after ZINT
@@ -1844,9 +1929,17 @@ endif  ! 1==2
 !           QV2M ( i, j )   =  q ( i, j, lm )/(1.-q ( i, j, lm )) ! 1st level mix. ratio 
 !           QSHLTR ( i, j ) =  q ( i, j, lm ) ! 1st level spec. humidity
 ! QV2M = diagnosed in WRF 2-m QV
-            QV2M ( i, j )   =  dummy ( i, j ) ! 2-m mix. ratio
-            QSHLTR ( i, j ) = dummy ( i, j )/(1.0+dummy ( i, j )) ! 2-m spec. hum.
-            QVl1 ( i, j )   =  q ( i, j, lm ) ! spec. humidity at lev. 1
+! jdong
+            if (dummy ( i, j ) < spval) then
+              QV2M ( i, j )   =  dummy ( i, j ) ! 2-m mix. ratio
+!              QSHLTR ( i, j ) = dummy ( i, j )/(1.0+dummy ( i, j )) ! 2-m spec. hum.
+              QSHLTR ( i, j ) = dummy ( i, j ) 
+              QVl1 ( i, j )   =  q ( i, j, lm ) ! spec. humidity at lev. 1
+            else
+              QV2M ( i, j ) =spval
+              QSHLTR ( i, j ) =spval
+              QVl1 ( i, j ) =spval
+            end if
           ELSE
 !HC            QSHLTR ( i, j ) = dummy ( i, j )
 !HC CONVERT FROM MIXING RATIO TO SPECIFIC HUMIDITY
@@ -3028,6 +3121,8 @@ endif  ! 1==2
               ELSE
                 SMFLAG=.FALSE.
               ENDIF
+! jdong turn off smooth
+              SMFLAG=.FALSE.
 
 ! generate look up table for lifted parcel calculations
 

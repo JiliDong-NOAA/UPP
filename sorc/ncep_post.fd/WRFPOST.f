@@ -358,6 +358,8 @@
 !Chuang: add dynamical allocation
         if(TRIM(IOFORM) == 'netcdf' .OR. TRIM(IOFORM) == 'netcdfpara') THEN
          IF(MODELNAME == 'NCAR' .OR. MODELNAME == 'RAPR' .OR. MODELNAME == 'NMM') THEN
+! jdong
+          spval = 9.99e20
           call ext_ncd_ioinit(SysDepInfo,Status)
           call ext_ncd_open_for_read( trim(fileName), 0, 0, " ",          &
             DataHandle, Status)
