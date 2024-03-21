@@ -162,6 +162,11 @@
 
       character startdate*19,SysDepInfo*80,IOWRFNAME*3,post_fname*255
       character cgar*1,cdum*4,line*10
+
+      integer                      :: unum, lenstr, istatus 
+      character(100)               :: tmpstr
+      logical                      :: fexist
+
 !
 !------------------------------------------------------------------------------
 !     START HERE
@@ -199,12 +204,27 @@
 !**************************************************************************
 !KaYee: Read itag in Fortran Namelist format
 !Set default 
+! jdong read namelist
+      unum = COMMAND_ARGUMENT_COUNT()
+      IF (unum > 0) THEN
+          CALL GET_COMMAND_ARGUMENT(1, tmpstr, lenstr, istatus )     
+          INQUIRE(FILE=TRIM(tmpstr),EXIST=fexist)
+          IF (.NOT. fexist) THEN
+               if (me==0) write(*,*) 'namelist does not exist'
+               stop
+          END IF
+      ELSE
+          if (me==0) write(*,*) 'no namelist'
+          stop
+      END IF
+
        SUBMODELNAME='NONE'
 !Set control file name
        fileNameFlat='postxconfig-NT.txt'
        numx=1
 !open namelist
-       open(5,file='itag')
+!       open(5,file='itag')
+       open(5,file=TRIM(tmpstr))
        read(5,nml=model_inputs,iostat=itag_ierr,err=888)
 888    if (itag_ierr /= 0) then
        print*,'Incorrect namelist variable(s) found in the itag file,stopping.'

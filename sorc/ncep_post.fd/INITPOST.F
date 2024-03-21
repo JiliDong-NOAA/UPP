@@ -3225,6 +3225,8 @@ endif  ! 1==2
        call ext_ncd_ioclose ( DataHandle, Status )
 !
 !HC WRITE IGDS OUT FOR WEIGHTMAKER TO READ IN AS KGDSIN
+! jdong turn off igd out
+      if (1 == 0) then
         if(me==0)then
         print*,'writing out igds'
         igdout=110
@@ -3322,6 +3324,8 @@ endif  ! 1==2
                  2(I8,x),'0')
           close (10)
         end if
+! jdong turn off igd out
+      end if
 !     
       DEALLOCATE (THV)
       deallocate (msft)
